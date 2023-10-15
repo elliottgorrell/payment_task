@@ -1,4 +1,5 @@
 use crate::types::{AccountProcesserError, Result};
+
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -33,6 +34,22 @@ impl Account {
         }
         self.available += amount;
         self.total += amount;
+        Ok(())
+    }
+
+    pub fn withdrawl(&mut self, amount: f32) -> Result<()> {
+        if amount < 0.0 {
+            return Err(AccountProcesserError::InvalidTransaction(
+                "Cannot withdraw a negative amount".to_string(),
+            ));
+        }
+        if amount > self.available {
+            return Err(AccountProcesserError::InvalidTransaction(
+                "Cannot withdraw more than available".to_string(),
+            ));
+        }
+        self.available -= amount;
+        self.total -= amount;
         Ok(())
     }
 }
