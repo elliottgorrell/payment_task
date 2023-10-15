@@ -4,6 +4,7 @@ mod types;
 
 use account::Account;
 use csv::{Reader, ReaderBuilder, Trim};
+use log::{debug, error};
 use std::{collections::HashMap, env, fs::File};
 use transactions::Transaction;
 use types::Result;
@@ -15,7 +16,11 @@ fn process_transactions(
 ) -> Result<()> {
     for result in reader.deserialize() {
         let transaction: Transaction = result?;
-        println!("{:?}", transaction);
+        debug!("processing transaction: {:?}", transaction);
+        let result = transactions::process_transaction(accounts, transaction_ledger, transaction);
+        if result.is_err() {
+            error!("Error processing transaction: {:?}", result);
+        }
     }
     Ok(())
 }
@@ -34,6 +39,7 @@ fn create_csv_reader() -> Reader<File> {
         .expect("Unable to read CSV file provided");
     reader
 }
+
 fn main() {
     let mut accounts: HashMap<u16, Account> = HashMap::new();
     let mut transaction_ledger: HashMap<u32, Transaction> = HashMap::new();

@@ -8,4 +8,6 @@ pub enum AccountProcesserError {
     InvalidTransaction(String),
     #[error("Issue when creating CSV Reader/Writer")]
     Csv(#[from] csv::Error),
+    #[error("Cannot Perform a transaction on a locked account. Account ID: {0}")]
+    AccountLocked(u16),
 }

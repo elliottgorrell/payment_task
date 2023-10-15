@@ -33,7 +33,15 @@ impl Account {
         }
     }
 
+    fn check_lock(&self) -> Result<()> {
+        if self.locked {
+            return Err(AccountProcesserError::AccountLocked(self.client_id));
+        }
+        Ok(())
+    }
+
     pub fn deposit(&mut self, amount: f32) -> Result<()> {
+        self.check_lock()?;
         if amount < 0.0 {
             return Err(AccountProcesserError::InvalidTransaction(
                 "Cannot deposit a negative amount".to_string(),
@@ -45,6 +53,7 @@ impl Account {
     }
 
     pub fn withdrawl(&mut self, amount: f32) -> Result<()> {
+        self.check_lock()?;
         if amount < 0.0 {
             return Err(AccountProcesserError::InvalidTransaction(
                 "Cannot withdraw a negative amount".to_string(),
@@ -61,6 +70,7 @@ impl Account {
     }
 
     pub fn dispute(&mut self, amount: f32, tx_id: u32) -> Result<()> {
+        self.check_lock()?;
         // This could potentially put the account into a negative balance
         self.available -= amount;
         self.held += amount;
@@ -68,12 +78,26 @@ impl Account {
         Ok(())
     }
 
-    pub fn resolve(&mut self, tx_id: u32) {
+    pub fn resolve(&mut self, tx_id: u32) -> Result<()> {
+        self.check_lock()?;
         let Some(amount) = self.open_disputes.remove(&tx_id) else {
             warn!("A dispute which is not in progress was resolved and being ignored: {tx_id}");
-            return;
+            return Ok(());
         };
         self.available += amount;
         self.held -= amount;
+        Ok(())
+    }
+
+    pub fn chargeback(&mut self, tx_id: u32) -> Result<()> {
+        self.check_lock()?;
+        let Some(amount) = self.open_disputes.remove(&tx_id) else {
+            warn!("A dispute which is not in progress was charged back and being ignored: {tx_id}");
+            return Ok(());
+        };
+        self.held -= amount;
+        self.total -= amount;
+        self.locked = true;
+        Ok(())
     }
 }

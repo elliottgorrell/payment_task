@@ -77,7 +77,16 @@ pub fn process_transaction(
                 ))?;
             account.dispute(amount, transaction.transaction_id)?;
         }
-        _ => unimplemented!(),
+        TransactionType::Resolve => {
+            // This is non-falliable (unless account is locked) as the task spec deems we just ignore all issues such as the dispute
+            // not being open or the transaction not existing
+            account.resolve(transaction.transaction_id)?;
+        }
+        TransactionType::Chargeback => {
+            // This is non-falliable (unless account is locked)  as the task spec deems we just ignore all issues such as the dispute
+            // not being open or the transaction not existing
+            account.chargeback(transaction.transaction_id)?;
+        }
     };
 
     Ok(())
