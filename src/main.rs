@@ -40,6 +40,16 @@ fn create_csv_reader() -> Reader<File> {
     reader
 }
 
+fn output_results(accounts: HashMap<u16, Account>) {
+    let mut writer = csv::Writer::from_writer(std::io::stdout());
+    for account in accounts.values() {
+        writer
+            .serialize(account)
+            .expect("Unable to write account to stdout");
+    }
+    writer.flush().expect("Unable to flush stdout");
+}
+
 fn main() {
     let mut accounts: HashMap<u16, Account> = HashMap::new();
     let mut transaction_ledger: HashMap<u32, Transaction> = HashMap::new();
@@ -47,4 +57,6 @@ fn main() {
     let reader = create_csv_reader();
     process_transactions(reader, &mut accounts, &mut transaction_ledger)
         .expect("Something went wrong while processing transactions");
+
+    output_results(accounts);
 }

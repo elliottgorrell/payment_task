@@ -7,6 +7,7 @@ use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct Account {
+    #[serde(rename = "client")]
     client_id: u16,
     /// The total funds that are available for trading, staking, withdrawal, etc. This should be equal to the total - held amounts
     available: f32,
