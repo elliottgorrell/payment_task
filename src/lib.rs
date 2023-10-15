@@ -13,6 +13,12 @@ pub struct PaymentEngine {
     transaction_ledger: HashMap<u32, Transaction>,
 }
 
+impl Default for PaymentEngine {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl PaymentEngine {
     pub fn new() -> Self {
         PaymentEngine {
