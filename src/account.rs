@@ -35,7 +35,6 @@ impl Account {
     }
 
     fn check_lock(&self) -> Result<()> {
-        println!("lock: {}", self.locked);
         if self.locked {
             return Err(AccountProcesserError::AccountLocked(self.client_id));
         }
@@ -93,8 +92,6 @@ impl Account {
 
     pub fn chargeback(&mut self, tx_id: u32) -> Result<()> {
         self.check_lock()?;
-        println!("chargeback being done for {}", tx_id);
-        println!("{:?}", self.open_disputes);
         let Some(amount) = self.open_disputes.remove(&tx_id) else {
             warn!("A dispute which is not in progress was charged back and being ignored: {tx_id}");
             return Ok(());
