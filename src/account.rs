@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::types::{AccountProcesserError, Result};
+use crate::error::{AccountProcesserError, Result};
 
 use log::warn;
 use serde::Serialize;
@@ -35,6 +35,7 @@ impl Account {
     }
 
     fn check_lock(&self) -> Result<()> {
+        println!("lock: {}", self.locked);
         if self.locked {
             return Err(AccountProcesserError::AccountLocked(self.client_id));
         }
@@ -92,6 +93,8 @@ impl Account {
 
     pub fn chargeback(&mut self, tx_id: u32) -> Result<()> {
         self.check_lock()?;
+        println!("chargeback being done for {}", tx_id);
+        println!("{:?}", self.open_disputes);
         let Some(amount) = self.open_disputes.remove(&tx_id) else {
             warn!("A dispute which is not in progress was charged back and being ignored: {tx_id}");
             return Ok(());
@@ -100,5 +103,21 @@ impl Account {
         self.total -= amount;
         self.locked = true;
         Ok(())
+    }
+
+    pub fn get_available(&self) -> f32 {
+        self.available
+    }
+
+    pub fn get_held(&self) -> f32 {
+        self.held
+    }
+
+    pub fn get_total(&self) -> f32 {
+        self.total
+    }
+
+    pub fn is_locked(&self) -> bool {
+        self.locked
     }
 }

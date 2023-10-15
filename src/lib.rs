@@ -1,12 +1,12 @@
 pub mod account;
 pub mod transactions;
-mod types;
+pub mod error;
 
 use account::Account;
 use log::info;
 use std::collections::HashMap;
 use transactions::{Transaction, TransactionType};
-use types::{AccountProcesserError, Result};
+use error::{AccountProcesserError, Result};
 
 pub struct PaymentEngine {
     accounts: HashMap<u16, Account>,
@@ -28,8 +28,6 @@ impl PaymentEngine {
     }
 
     pub fn process_transaction(&mut self, transaction: Transaction) -> Result<()> {
-        self.transaction_ledger
-            .insert(transaction.transaction_id, transaction.clone());
         // We lazily create accounts currently as we have no idea of knowing what accounts exist before seeing them in the transaction file
         // In the future we could have a separate process that creates accounts first either my doing an extra full parse of the csv or other input type
         let account = self
@@ -39,6 +37,8 @@ impl PaymentEngine {
 
         match transaction.transaction_type {
             TransactionType::Deposit => {
+                self.transaction_ledger
+                    .insert(transaction.transaction_id, transaction.clone());
                 let amount =
                     transaction
                         .amount
@@ -48,6 +48,8 @@ impl PaymentEngine {
                 account.deposit(amount)?;
             }
             TransactionType::Withdrawal => {
+                self.transaction_ledger
+                    .insert(transaction.transaction_id, transaction.clone());
                 let amount =
                     transaction
                         .amount
@@ -72,12 +74,11 @@ impl PaymentEngine {
                       .to_string(),
               ));
                 }
-                let amount =
-                    transaction
-                        .amount
-                        .ok_or(AccountProcesserError::InvalidTransaction(
-                            "Dispute transaction must have an amount".to_string(),
-                        ))?;
+                let amount = disputed_transaction.amount.ok_or(
+                    AccountProcesserError::InvalidTransaction(
+                        "Dispute transaction must have an amount".to_string(),
+                    ),
+                )?;
                 account.dispute(amount, transaction.transaction_id)?;
             }
             TransactionType::Resolve => {
