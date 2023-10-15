@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::account::Account;
 use crate::types::{AccountProcesserError, Result};
+use log::info;
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone)]
@@ -53,6 +54,28 @@ pub fn process_transaction(
                     "Withdrawal transaction must have an amount".to_string(),
                 ))?;
             account.withdrawl(amount)?;
+        }
+        TransactionType::Dispute => {
+            let Some(disputed_transaction) = transactions_ledger.get(&transaction.transaction_id)
+            else {
+                info!(
+                    "A dispute was lodged for transaction {} which doesn't exist. ignoring",
+                    &transaction.transaction_id
+                );
+                return Ok(());
+            };
+            if transaction.client_id != disputed_transaction.client_id {
+                return Err(AccountProcesserError::InvalidTransaction(
+                    "Dispute transaction must be for the same client as the disputed transaction"
+                        .to_string(),
+                ));
+            }
+            let amount = transaction
+                .amount
+                .ok_or(AccountProcesserError::InvalidTransaction(
+                    "Dispute transaction must have an amount".to_string(),
+                ))?;
+            account.dispute(amount, transaction.transaction_id)?;
         }
         _ => unimplemented!(),
     };

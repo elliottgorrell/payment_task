@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use crate::types::{AccountProcesserError, Result};
 
+use log::warn;
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -13,6 +16,9 @@ pub struct Account {
     total: f32,
     /// Whether the account is locked. An account is locked if a charge back occurs
     locked: bool,
+    /// Currently open disputes on this account the key is the tx_id and the val the amount of dispute. This tx_id  can be looked up in global ledger
+    #[serde(skip_serializing)]
+    open_disputes: HashMap<u32, f32>,
 }
 
 impl Account {
@@ -23,6 +29,7 @@ impl Account {
             held: 0.0,
             total: 0.0,
             locked: false,
+            open_disputes: HashMap::new(),
         }
     }
 
@@ -51,5 +58,22 @@ impl Account {
         self.available -= amount;
         self.total -= amount;
         Ok(())
+    }
+
+    pub fn dispute(&mut self, amount: f32, tx_id: u32) -> Result<()> {
+        // This could potentially put the account into a negative balance
+        self.available -= amount;
+        self.held += amount;
+        self.open_disputes.insert(tx_id, amount);
+        Ok(())
+    }
+
+    pub fn resolve(&mut self, tx_id: u32) {
+        let Some(amount) = self.open_disputes.remove(&tx_id) else {
+            warn!("A dispute which is not in progress was resolved and being ignored: {tx_id}");
+            return;
+        };
+        self.available += amount;
+        self.held -= amount;
     }
 }
